@@ -17,6 +17,6 @@ Luni     | 19:00 – 22:00+ | minim 3 ore
 Marți    | 19:00 – 22:00+ | minim 3 ore
 Miercuri | 19:00 – 22:00+ | minim 3 ore
 Joi      | 19:00 – 22:00+ | minim 3 ore
-Vineri   | 19:00 – 22:00+ | minim 3 ore
-Sâmbătă  | Flexibil       | posibil liber
-Duminică | Flexibil       | posibil liber
+Vineri   | Liber.         | posibil dupa 23
+Sâmbătă  | Flexibil       | posibil Liber
+Duminică | Flexibil       | posibil Liber
