@@ -101,6 +101,8 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .day.off{--c:#2a2346;box-shadow:inset 0 -6px 0 rgba(0,0,0,.28),inset 0 2px 0 rgba(255,255,255,.08)}
 .day.today{outline:3px solid #fff;outline-offset:4px}
 .day .now{position:absolute;top:-30px;right:6px;padding:1px 9px;border-radius:999px;background:var(--pink);font-size:13px;font-weight:700;box-shadow:0 0 12px var(--pink)}
+.msg{max-width:36em;margin:14px auto 0;padding:10px 18px;border-radius:14px;border:2px solid var(--pink);background:rgba(255,63,208,.12);text-align:center;font-weight:700;box-shadow:0 0 16px rgba(255,63,208,.35)}
+.msg[hidden]{display:none}
 .tz{margin:22px 0 0;text-align:center;font-size:14px;color:var(--soft)}
 
 /* Footer */
@@ -169,6 +171,7 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
   <div class="wrap">
     <h2 class="sched-title" id="sched-title">Programul de <b>live</b></h2>
     <p class="next" id="next"></p>
+    <p class="msg" id="msg" hidden></p>
     <ol class="sched" id="sched"></ol>
     <p class="tz">Orele sunt în ora României.</p>
   </div>
@@ -218,18 +221,20 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
       bg: "#1877f2", color: "#1877f2" }
   ];
 
-  // Live schedule (Romania time). live:false = flexible / maybe off.
+  // Live schedule (Romania time). The live copy comes from program.txt (editable on GitHub, even from a phone);
+  // this list is only the fallback if program.txt can't be loaded. A day is a live day when its hours contain a time.
+  const SCHEDULE_URL = "program.txt";
   const SCHEDULE = [
-    { day: "Luni", hours: "19:00 – 22:00+", note: "minim 3 ore", live: true, color: "#1e8bff" },
-    { day: "Marți", hours: "19:00 – 22:00+", note: "minim 3 ore", live: true, color: "#9b3dff" },
-    { day: "Miercuri", hours: "19:00 – 22:00+", note: "minim 3 ore", live: true, color: "#ff2b3a" },
-    { day: "Joi", hours: "19:00 – 22:00+", note: "minim 3 ore", live: true, color: "#1e8bff" },
-    { day: "Vineri", hours: "19:00 – 22:00+", note: "minim 3 ore", live: true, color: "#9b3dff" },
-    { day: "Sâmbătă", hours: "Flexibil", note: "posibil liber", live: false },
-    { day: "Duminică", hours: "Flexibil", note: "posibil liber", live: false }
+    { day: "Luni", hours: "19:00 – 22:00+", note: "minim 3 ore" },
+    { day: "Marți", hours: "19:00 – 22:00+", note: "minim 3 ore" },
+    { day: "Miercuri", hours: "19:00 – 22:00+", note: "minim 3 ore" },
+    { day: "Joi", hours: "19:00 – 22:00+", note: "minim 3 ore" },
+    { day: "Vineri", hours: "19:00 – 22:00+", note: "minim 3 ore" },
+    { day: "Sâmbătă", hours: "Flexibil", note: "posibil liber" },
+    { day: "Duminică", hours: "Flexibil", note: "posibil liber" }
   ];
-  const LIVE_START = "19:00";
-  const LIVE_END_HOUR = 22; // after this hour the next scheduled live is the next live day
+  const DAY_COLORS = ["#1e8bff", "#9b3dff", "#ff2b3a"];
+  const DEFAULT_LIVE_HOURS = 3; // used when a day has only a start time
 
   // Floating bricks: x/y in %, size in px, colour, rotation, float duration
   const BRICKS = [
@@ -262,38 +267,84 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
   ).join("");
 
   // Current day and hour in Romania (0 = Monday)
-  const roParts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Bucharest", weekday: "short", hour: "numeric", hourCycle: "h23" })
+  const roParts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Bucharest", weekday: "short", hour: "numeric", minute: "numeric", hourCycle: "h23" })
     .formatToParts(new Date()).map(p => [p.type, p.value]));
   const today = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(roParts.weekday);
   const hour = Number(roParts.hour);
+  const minute = Number(roParts.minute);
 
-  document.getElementById("sched").innerHTML = SCHEDULE.map((d, i) => `
-    <li class="day${d.live ? "" : " off"}${i === today ? " today" : ""}"${d.live ? ` style="--c:${esc(d.color)}"` : ""}>
+  // ===== Live schedule =====
+  const DAY_KEYS = ["luni", "marti", "miercuri", "joi", "vineri", "sambata", "duminica"];
+  const plain = t => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const toMinutes = t => { const [h, m] = t.split(/[:.]/).map(Number); return h * 60 + m; };
+
+  // Adds start/end (minutes) and live flag from the hours text, e.g. "19:00 – 22:00+" or "Liber".
+  const withTimes = d => {
+    const times = (d.hours.match(/\b\d{1,2}[:.]\d{2}\b/g) || []).map(toMinutes);
+    const live = times.length > 0;
+    const start = live ? times[0] : null;
+    const end = live ? (times[1] > times[0] ? times[1] : start + DEFAULT_LIVE_HOURS * 60) : null;
+    return { ...d, live, start, end };
+  };
+
+  // program.txt format: "Zi | ore | notă" per line, "Mesaj: ..." for an optional notice, "#" for comments.
+  const parseProgram = text => {
+    const days = SCHEDULE.map(d => ({ ...d }));
+    let message = "";
+    text.split(/\r?\n/).forEach(raw => {
+      const line = raw.trim();
+      if (!line || line.startsWith("#")) return;
+      const msg = line.match(/^mesaj\s*:(.*)$/i);
+      if (msg) { message = msg[1].trim(); return; }
+      const [day, hours = "", note = ""] = line.split("|").map(x => x.trim());
+      const i = DAY_KEYS.indexOf(plain(day));
+      if (i >= 0 && hours) days[i] = { day: SCHEDULE[i].day, hours, note };
+    });
+    return { days, message };
+  };
+
+  const fmt = m => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  let scheduleLine = "";
+  const nextEl = document.getElementById("next");
+
+  const renderSchedule = (rawDays, message) => {
+    const days = rawDays.map(withTimes);
+    let n = 0;
+    document.getElementById("sched").innerHTML = days.map((d, i) => `
+    <li class="day${d.live ? "" : " off"}${i === today ? " today" : ""}"${d.live ? ` style="--c:${DAY_COLORS[n++ % DAY_COLORS.length]}"` : ""}>
       ${i === today ? '<span class="now">Azi</span>' : ""}
       <h3>${esc(d.day)}</h3>
       <span class="hrs">${esc(d.hours)}</span>
-      <span class="note">${esc(d.note)}</span>
+      ${d.note ? `<span class="note">${esc(d.note)}</span>` : ""}
     </li>`).join("");
 
-  // Next scheduled live (from the schedule only - not a real live status)
-  let scheduleLine = "";
-  if (today >= 0) {
-    let next = -1;
-    for (let k = 0; k < 7; k++) {
-      const i = (today + k) % 7;
-      if (SCHEDULE[i].live && !(k === 0 && hour >= LIVE_END_HOUR)) { next = k; break; }
+    const msgEl = document.getElementById("msg");
+    msgEl.textContent = message;
+    msgEl.hidden = !message;
+
+    // Next scheduled live (from the schedule only - not a real live status)
+    scheduleLine = "";
+    if (today >= 0) {
+      const nowMin = hour * 60 + minute;
+      for (let k = 0; k < 7; k++) {
+        const d = days[(today + k) % 7];
+        if (!d.live || (k === 0 && nowMin >= d.end)) continue;
+        const when = k === 0 ? "azi" : k === 1 ? "mâine" : d.day.toLowerCase();
+        scheduleLine = `Următorul live din program: <span>${esc(when)}, de la ${esc(fmt(d.start))}</span>`;
+        break;
+      }
     }
-    if (next >= 0) {
-      const i = (today + next) % 7;
-      const when = next === 0 ? "azi" : next === 1 ? "mâine" : SCHEDULE[i].day.toLowerCase();
-      scheduleLine = `Următorul live din program: <span>${esc(when)}, de la ${esc(LIVE_START)}</span>`;
-      document.getElementById("next").innerHTML = scheduleLine;
-    }
-  }
+    if (!document.querySelector(".live.on")) nextEl.innerHTML = scheduleLine;
+  };
+
+  renderSchedule(SCHEDULE, "");
+  fetch(`${SCHEDULE_URL}?t=${Date.now()}`, { cache: "no-store" })
+    .then(r => (r.ok ? r.text() : Promise.reject(r.status)))
+    .then(text => { const p = parseProgram(text); renderSchedule(p.days, p.message); })
+    .catch(() => { /* keep the built-in fallback schedule */ });
 
   // ===== LIVE NOW from Stream Hub =====
   let heroRef = document.getElementById("onair-hero");
-  const nextEl = document.getElementById("next");
   const showLive = live => {
     const on = [];
     LINKS.forEach(l => {

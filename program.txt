@@ -1,0 +1,22 @@
+# PROGRAMUL DE LIVE - danceboybb.com
+# Ce scrii aici apare pe site în aproximativ 1-2 minute după ce salvezi (Commit changes).
+#
+# Câte un rând pentru fiecare zi:   Zi | ore | notă
+#   - Dacă la "ore" scrii o oră (ex. 19:00 – 22:00+ sau 20:30), ziua apare colorată ca zi de live.
+#   - Dacă scrii text fără oră (ex. Liber, Flexibil, Pauză), ziua apare gri.
+#   - Nota e opțională (poți lăsa gol după ultima bară).
+#
+# Mesaj opțional deasupra programului (șterge textul de după "Mesaj:" ca să dispară):
+#   ex.  Mesaj: Săptămâna asta sunt în concediu, revin luni!
+#
+# Rândurile care încep cu # sunt doar explicații și nu apar pe site.
+
+Mesaj:
+
+Luni     | 19:00 – 22:00+ | minim 3 ore
+Marți    | 19:00 – 22:00+ | minim 3 ore
+Miercuri | 19:00 – 22:00+ | minim 3 ore
+Joi      | 19:00 – 22:00+ | minim 3 ore
+Vineri   | 19:00 – 22:00+ | minim 3 ore
+Sâmbătă  | Flexibil       | posibil liber
+Duminică | Flexibil       | posibil liber
