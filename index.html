@@ -69,12 +69,37 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
 .badge.off{opacity:.55;box-shadow:none}
 .badge.off .go{font-size:13px;color:var(--soft);white-space:nowrap}
 
+/* Live schedule - each day is a toy brick with studs on top */
+.sched-band{background:#0a0718;padding-top:0}
+.sched-title{margin:0;text-align:center;font:400 clamp(32px,5vw,46px)/1.05 "Lilita One",Impact,sans-serif;text-shadow:0 0 22px rgba(155,61,255,.6)}
+.sched-title b{font-weight:400;color:var(--blue)}
+.next{margin:10px auto 0;text-align:center;font-weight:700;font-size:17px;color:#fff}
+.next span{color:var(--pink);white-space:nowrap}
+.sched{list-style:none;margin:34px 0 0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
+.day{position:relative;padding:18px 10px 16px;border-radius:10px;text-align:center;background:var(--c);
+  box-shadow:inset 0 -6px 0 rgba(0,0,0,.28),inset 0 2px 0 rgba(255,255,255,.18),0 0 16px color-mix(in srgb,var(--c) 45%,transparent)}
+.day::before{content:"";position:absolute;left:50%;top:-11px;width:64%;height:12px;transform:translateX(-50%);
+  background:radial-gradient(circle at 25% 60%,var(--c) 0 9px,transparent 10px),radial-gradient(circle at 75% 60%,var(--c) 0 9px,transparent 10px);filter:brightness(1.12)}
+.day h3{margin:0;font:400 19px/1.2 "Lilita One",Impact,sans-serif}
+.day .hrs{display:block;margin-top:6px;font-weight:700;font-size:17px;white-space:nowrap}
+.day .note{display:block;margin-top:2px;font-size:13px;color:rgba(255,255,255,.82)}
+.day.off{--c:#2a2346;box-shadow:inset 0 -6px 0 rgba(0,0,0,.28),inset 0 2px 0 rgba(255,255,255,.08)}
+.day.today{outline:3px solid #fff;outline-offset:4px}
+.day .now{position:absolute;top:-30px;right:6px;padding:1px 9px;border-radius:999px;background:var(--pink);font-size:13px;font-weight:700;box-shadow:0 0 12px var(--pink)}
+.tz{margin:22px 0 0;text-align:center;font-size:14px;color:var(--soft)}
+
 /* Footer */
 .foot{background:#0a0718;padding-top:0;text-align:center;color:var(--soft);font-size:15px}
 .copy{min-height:44px;padding:10px 22px;border-radius:999px;border:2px solid var(--blue);background:transparent;color:#fff;font:700 16px Rubik,sans-serif;cursor:pointer;box-shadow:0 0 14px rgba(30,139,255,.5)}
 .copy:hover{background:var(--blue)}
 .foot p{margin:14px 0 0}
 
+@media(max-width:820px){
+  .sched{grid-template-columns:minmax(0,1fr);gap:22px;max-width:520px;margin-inline:auto}
+  .day{display:grid;grid-template-columns:7.5em 1fr;align-items:center;text-align:start;padding:14px 18px}
+  .day .hrs{margin:0}
+  .day .note{grid-column:2}
+}
 @media(max-width:600px){
   .grid{grid-template-columns:minmax(0,1fr);gap:14px}
   .badge{min-height:74px;padding:12px 16px}
@@ -125,6 +150,15 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
   </div>
 </main>
 
+<section class="band sched-band" id="program" aria-labelledby="sched-title">
+  <div class="wrap">
+    <h2 class="sched-title" id="sched-title">Programul de <b>live</b></h2>
+    <p class="next" id="next"></p>
+    <ol class="sched" id="sched"></ol>
+    <p class="tz">Orele sunt în ora României.</p>
+  </div>
+</section>
+
 <footer class="band foot">
   <div class="wrap">
     <button class="copy" id="copy" type="button">Copiază linkul paginii</button>
@@ -157,6 +191,19 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
     { name: "Facebook", handle: "DanceboyBB", url: "https://www.facebook.com/profile.php?id=100000952430353", icon: "people", color: "#1e8bff" }
   ];
 
+  // Live schedule (Romania time). live:false = flexible / maybe off.
+  const SCHEDULE = [
+    { day: "Luni", hours: "19:00 – 22:00+", note: "minim 3 ore", live: true, color: "#1e8bff" },
+    { day: "Marți", hours: "19:00 – 22:00+", note: "minim 3 ore", live: true, color: "#9b3dff" },
+    { day: "Miercuri", hours: "19:00 – 22:00+", note: "minim 3 ore", live: true, color: "#ff2b3a" },
+    { day: "Joi", hours: "19:00 – 22:00+", note: "minim 3 ore", live: true, color: "#1e8bff" },
+    { day: "Vineri", hours: "19:00 – 22:00+", note: "minim 3 ore", live: true, color: "#9b3dff" },
+    { day: "Sâmbătă", hours: "Flexibil", note: "posibil liber", live: false },
+    { day: "Duminică", hours: "Flexibil", note: "posibil liber", live: false }
+  ];
+  const LIVE_START = "19:00";
+  const LIVE_END_HOUR = 22; // after this hour the next scheduled live is the next live day
+
   // Floating bricks: x/y in %, size in px, colour, rotation, float duration
   const BRICKS = [
     { x: 6, y: 14, s: 74, c: "#ff2b3a", r: -12, d: 3.4 },
@@ -185,6 +232,34 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
   document.getElementById("bricks").innerHTML = BRICKS.map(b =>
     `<svg class="brick${b.far ? " far" : ""}" style="left:${b.x}%;top:${b.y}%;--s:${b.s}px;--c:${b.c};--r:${b.r}deg;--d:${b.d}s"><use href="#brick"/></svg>`
   ).join("");
+
+  // Current day and hour in Romania (0 = Monday)
+  const roParts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Bucharest", weekday: "short", hour: "numeric", hourCycle: "h23" })
+    .formatToParts(new Date()).map(p => [p.type, p.value]));
+  const today = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(roParts.weekday);
+  const hour = Number(roParts.hour);
+
+  document.getElementById("sched").innerHTML = SCHEDULE.map((d, i) => `
+    <li class="day${d.live ? "" : " off"}${i === today ? " today" : ""}"${d.live ? ` style="--c:${esc(d.color)}"` : ""}>
+      ${i === today ? '<span class="now">Azi</span>' : ""}
+      <h3>${esc(d.day)}</h3>
+      <span class="hrs">${esc(d.hours)}</span>
+      <span class="note">${esc(d.note)}</span>
+    </li>`).join("");
+
+  // Next scheduled live (from the schedule only - not a real live status)
+  if (today >= 0) {
+    let next = -1;
+    for (let k = 0; k < 7; k++) {
+      const i = (today + k) % 7;
+      if (SCHEDULE[i].live && !(k === 0 && hour >= LIVE_END_HOUR)) { next = k; break; }
+    }
+    if (next >= 0) {
+      const i = (today + next) % 7;
+      const when = next === 0 ? "azi" : next === 1 ? "mâine" : SCHEDULE[i].day.toLowerCase();
+      document.getElementById("next").innerHTML = `Următorul live din program: <span>${esc(when)}, de la ${esc(LIVE_START)}</span>`;
+    }
+  }
 
   document.getElementById("year").textContent = new Date().getFullYear();
 
