@@ -110,6 +110,21 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .msg[hidden]{display:none}
 .tz{margin:22px 0 0;text-align:center;font-size:14px;color:var(--soft)}
 
+/* Collection gallery */
+.gal-band{background:#0a0718;padding-top:0}
+.gal-sub{margin:10px auto 0;max-width:34em;text-align:center;color:var(--soft)}
+.gal{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:26px}
+.gal button{display:block;padding:0;border:2px solid rgba(155,61,255,.55);border-radius:16px;overflow:hidden;background:#000;cursor:zoom-in;
+  box-shadow:0 0 18px rgba(155,61,255,.35);transition:transform .15s,box-shadow .15s}
+.gal button:first-child{grid-column:1/-1}
+.gal button:hover{transform:translateY(-3px);box-shadow:0 0 28px rgba(30,139,255,.6)}
+.gal button:focus-visible,.lb-close:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.gal img{display:block;width:100%;height:auto;aspect-ratio:1600/747;object-fit:cover}
+.lightbox{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(5,4,12,.92)}
+.lightbox[hidden]{display:none}
+.lightbox img{max-width:100%;max-height:90vh;border-radius:12px;box-shadow:0 0 40px rgba(155,61,255,.5)}
+.lb-close{position:absolute;top:12px;right:12px;width:48px;height:48px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.5);color:#fff;font-size:30px;line-height:1;cursor:pointer}
+
 /* Footer */
 .foot{background:#0a0718;padding-top:0;text-align:center;color:var(--soft);font-size:15px}
 .copy{min-height:44px;padding:10px 22px;border-radius:999px;border:2px solid var(--blue);background:transparent;color:#fff;font:700 16px Rubik,sans-serif;cursor:pointer;box-shadow:0 0 14px rgba(30,139,255,.5)}
@@ -123,11 +138,12 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
   .day .note{grid-column:2}
 }
 @media(max-width:600px){
+  .gal{grid-template-columns:minmax(0,1fr)}
   .grid{grid-template-columns:minmax(0,1fr);gap:14px}
   .badge{min-height:74px;padding:12px 16px}
   .brick.far{display:none}
 }
-@media(prefers-reduced-motion:reduce){.brick{animation:none}.badge{transition:none}.badge.is-live,.badge.is-live .onair,.onair::before,.live.on,.live.on::before{animation:none}}
+@media(prefers-reduced-motion:reduce){.brick{animation:none}.badge,.gal button{transition:none}.badge.is-live,.badge.is-live .onair,.onair::before,.live.on,.live.on::before{animation:none}}
 </style>
 </head>
 <body>
@@ -181,6 +197,19 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
     <p class="tz">Orele sunt în ora României.</p>
   </div>
 </section>
+
+<section class="band gal-band" id="colectie" aria-labelledby="gal-title">
+  <div class="wrap">
+    <h2 class="sched-title" id="gal-title">Colecția <b>mea</b></h2>
+    <p class="gal-sub">Mașini construite din piese, pe peretele meu. Apasă pe o poză ca s-o vezi mare.</p>
+    <div class="gal" id="gal"></div>
+  </div>
+</section>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lb-close" id="lb-close" type="button" aria-label="Închide">&times;</button>
+  <img id="lb-img" alt="">
+</div>
 
 <footer class="band foot">
   <div class="wrap">
@@ -242,6 +271,13 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
   ];
   const DAY_COLORS = ["#1e8bff", "#9b3dff", "#ff2b3a"];
   const DEFAULT_LIVE_HOURS = 3; // used when a day has only a start time
+
+  // Collection photos (files in gallery/)
+  const GALLERY = [
+    { src: "gallery/collection-1.webp", alt: "Supercar și mașini de Formula 1 din piese, expuse pe perete" },
+    { src: "gallery/collection-2.webp", alt: "Două mașini de Formula 1 din piese, expuse pe perete" },
+    { src: "gallery/collection-3.webp", alt: "Două supercar-uri din piese, expuse pe perete" }
+  ];
 
   // Floating bricks: x/y in %, size in px, colour, rotation, float duration
   const BRICKS = [
@@ -401,6 +437,26 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
     setInterval(() => { if (!document.hidden) checkLive(); }, LIVE_CHECK_SECONDS * 1000);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) checkLive(); });
   }
+
+  // ===== Collection gallery + lightbox =====
+  const gal = document.getElementById("gal");
+  gal.innerHTML = GALLERY.map((g, i) =>
+    `<button type="button" data-i="${i}" aria-label="Mărește poza: ${esc(g.alt)}"><img src="${esc(g.src)}" alt="${esc(g.alt)}" loading="lazy" width="1600" height="747"></button>`
+  ).join("");
+  const lb = document.getElementById("lightbox");
+  const lbImg = document.getElementById("lb-img");
+  let lastFocus = null;
+  const closeLb = () => { lb.hidden = true; document.body.style.overflow = ""; if (lastFocus) lastFocus.focus(); };
+  gal.addEventListener("click", e => {
+    const b = e.target.closest("button[data-i]");
+    if (!b) return;
+    const g = GALLERY[Number(b.dataset.i)];
+    lbImg.src = g.src; lbImg.alt = g.alt;
+    lastFocus = b; lb.hidden = false; document.body.style.overflow = "hidden";
+    document.getElementById("lb-close").focus();
+  });
+  lb.addEventListener("click", e => { if (e.target !== lbImg) closeLb(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !lb.hidden) closeLb(); });
 
   document.getElementById("year").textContent = new Date().getFullYear();
 
