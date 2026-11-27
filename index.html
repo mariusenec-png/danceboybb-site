@@ -89,6 +89,22 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
 a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .badge.off .go{font-size:13px;color:var(--soft);white-space:nowrap}
 
+/* About me - a yellow LEGO plate used as a sticky note, pinned with a red brick */
+.about-band{background:#0a0718;padding-top:0}
+.about-note{position:relative;max-width:620px;margin:0 auto;padding:44px clamp(22px,4vw,40px) 28px;border-radius:10px;
+  background:#f6cd2e;color:#2a1d00;transform:rotate(-1.5deg);
+  box-shadow:inset 0 -7px 0 rgba(0,0,0,.16),inset 0 2px 0 rgba(255,255,255,.35),0 14px 30px rgba(0,0,0,.45),0 0 30px rgba(246,205,46,.25)}
+.about-note::before{content:"";position:absolute;left:18px;right:18px;top:-10px;height:22px;
+  background:radial-gradient(circle at 50% 55%,#ffe178 0 8px,#d9a913 8.5px 10.5px,transparent 11px) repeat-x;background-size:34px 22px}
+.about-note .pin{position:absolute;top:-30px;right:-18px;width:74px;height:74px;color:#ff2b3a;transform:rotate(14deg);filter:drop-shadow(0 6px 6px rgba(0,0,0,.45))}
+.about-note h2{margin:0 0 12px;font:400 clamp(28px,4.5vw,38px)/1.05 "Lilita One",Impact,sans-serif;color:#3a1a7a}
+.about-note p{margin:0 0 12px;font-size:17px;line-height:1.6}
+.about-note b{color:#1a0d4d}
+.about-note .sign{margin-top:16px;font:italic 700 17px Rubik,sans-serif;color:#5a3a00}
+.note-cta{display:inline-flex;align-items:center;min-height:44px;margin-top:6px;padding:10px 20px;border-radius:999px;background:#3a1a7a;color:#fff;font-weight:700;text-decoration:none;box-shadow:inset 0 -3px 0 rgba(0,0,0,.3)}
+.note-cta:hover{background:#9b3dff}
+.note-cta:focus-visible{outline:3px solid #fff;outline-offset:3px}
+
 /* Live schedule - each day is a toy brick with studs on top */
 .sched-band{background:#0a0718;padding-top:0}
 .sched-title{margin:0;text-align:center;font:400 clamp(32px,5vw,46px)/1.05 "Lilita One",Impact,sans-serif;text-shadow:0 0 22px rgba(155,61,255,.6)}
@@ -138,6 +154,8 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
   .day .note{grid-column:2}
 }
 @media(max-width:600px){
+  .about-note{transform:none}
+  .about-note .pin{right:-6px;width:60px;height:60px}
   .gal{grid-template-columns:minmax(0,1fr)}
   .grid{grid-template-columns:minmax(0,1fr);gap:14px}
   .badge{min-height:74px;padding:12px 16px}
@@ -187,6 +205,19 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
     <nav class="grid" id="links" aria-label="Linkuri DanceboyBB"></nav>
   </div>
 </main>
+
+<section class="band about-band" id="despre" aria-labelledby="about-title">
+  <div class="wrap">
+    <article class="about-note">
+      <svg class="pin" aria-hidden="true"><use href="#brick"/></svg>
+      <h2 id="about-title">Despre mine</h2>
+      <p>Salutare și bine ai venit! Sunt <b>Marius Ene</b> și îmi place să construiesc LEGO. Preferatele mele sunt mașinile din seriile <b>Speed Champions</b> și <b>Technic</b>.</p>
+      <p>Între timp mi-am găsit și o nouă pasiune: să mă joc pe live. Așa că te aștept acolo!</p>
+      <p class="sign">Marius, aka DanceboyBB</p>
+      <a class="note-cta" href="#program">Vezi programul de live &darr;</a>
+    </article>
+  </div>
+</section>
 
 <section class="band sched-band" id="program" aria-labelledby="sched-title">
   <div class="wrap">
@@ -253,7 +284,7 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
       bg: "#53fc18", color: "#53fc18", ink: "#0b0e0f", live: "kick", liveUrl: "https://kick.com/danceboybb" },
     { name: "Instagram", handle: "marius.ene92", url: "https://www.instagram.com/marius.ene92", icon: "camera", logo: "icons/instagram.png",
       bg: "linear-gradient(45deg,#feda75,#fa7e1e 25%,#d62976 50%,#962fbf 75%,#4f5bd5)", color: "#d62976" },
-    { name: "Facebook", handle: "DanceboyBB", url: "https://www.facebook.com/profile.php?id=100000952430353", icon: "people", logo: "icons/facebook.png", logoStyle: "ring",
+    { name: "Facebook", handle: "Ene Marius", url: "https://www.facebook.com/profile.php?id=100000952430353", icon: "people", logo: "icons/facebook.png", logoStyle: "ring",
       bg: "#1877f2", color: "#1877f2" }
   ];
 
