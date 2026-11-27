@@ -62,11 +62,24 @@ a.badge:hover{transform:translateY(-3px);box-shadow:0 0 26px var(--c),inset 0 0 
 a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .ico{flex:none;width:50px;height:50px;border-radius:12px;display:grid;place-items:center;background:var(--c);color:#fff;box-shadow:0 0 14px var(--c)}
 .ico svg{width:27px;height:27px}
-.txt{flex:1;display:grid;gap:1px}
+.txt{flex:1;display:grid;gap:1px;justify-items:start}
 .txt b{font-size:19px;line-height:1.2}
 .txt i{font-style:italic;font-weight:700;font-size:15px;color:var(--soft)}
 .go{flex:none;font-size:22px;font-weight:700;color:var(--c)}
 .badge.off{opacity:.55;box-shadow:none}
+
+/* LIVE NOW - shown only while Stream Hub reports the platform live */
+.onair{display:none;align-items:center;gap:7px;padding:3px 11px;border-radius:999px;background:var(--red);color:#fff;
+  font:italic 700 13px/1.3 Rubik,sans-serif;letter-spacing:.04em;white-space:nowrap;box-shadow:0 0 12px var(--red)}
+.onair::before{content:"";width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:0 0 8px #fff;animation:blink 1s ease-in-out infinite}
+.badge.is-live .onair{display:inline-flex;animation:glow 1.4s ease-in-out infinite}
+.badge.is-live{animation:livering 1.4s ease-in-out infinite}
+@keyframes blink{50%{opacity:.15;transform:scale(.7)}}
+@keyframes glow{50%{box-shadow:0 0 22px var(--red),0 0 40px rgba(255,43,58,.6)}}
+@keyframes livering{50%{box-shadow:0 0 30px var(--c),0 0 60px color-mix(in srgb,var(--c) 60%,transparent),inset 0 0 24px color-mix(in srgb,var(--c) 35%,transparent)}}
+.live.on{background:linear-gradient(90deg,var(--red),var(--pink));color:#fff;text-decoration:none;animation:glow 1.4s ease-in-out infinite}
+.live.on::before{animation:blink 1s ease-in-out infinite}
+a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .badge.off .go{font-size:13px;color:var(--soft);white-space:nowrap}
 
 /* Live schedule - each day is a toy brick with studs on top */
@@ -105,7 +118,7 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
   .badge{min-height:74px;padding:12px 16px}
   .brick.far{display:none}
 }
-@media(prefers-reduced-motion:reduce){.brick{animation:none}.badge{transition:none}}
+@media(prefers-reduced-motion:reduce){.brick{animation:none}.badge{transition:none}.badge.is-live,.badge.is-live .onair,.onair::before,.live.on,.live.on::before{animation:none}}
 </style>
 </head>
 <body>
@@ -139,7 +152,7 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
   <div class="wrap">
     <div class="ring"><img src="avatar.webp" alt="Avatarul DanceboyBB" width="480" height="480"></div>
     <h1 class="word">Danceboy<b>BB</b></h1>
-    <span class="live">LIVE</span>
+    <span class="live" id="onair-hero">LIVE</span>
     <p class="tag">Live-uri cu gaming și distracție. Toate locurile unde mă găsești, într-o singură pagină.</p>
   </div>
 </header>
@@ -171,6 +184,10 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
   // ===== SITE CONFIG - edit here =====
   // Leave url empty ("") and the badge shows "în curând" instead of a link.
   const SITE_URL = "https://danceboybb.com";
+  // "LIVE NOW" status from DanceboyBB Stream Hub (Settings > General > Live now on your website).
+  // Answers only while Stream Hub runs on the stream PC; any error = shown as offline.
+  const LIVE_STATUS_URL = "https://live.danceboybb.com/live.json";
+  const LIVE_CHECK_SECONDS = 60;
 
   const ICONS = {
     note: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 3h3a4 4 0 0 0 4 4v3a7 7 0 0 1-4-1.3V15a6 6 0 1 1-6-6v3.2A2.8 2.8 0 1 0 14 15z"/></svg>',
@@ -183,10 +200,11 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
 
   // Handles taken from the DanceboyBB stream overlays - verify each link before going public.
   const LINKS = [
-    { name: "TikTok LIVE", handle: "@danceboybb", url: "https://www.tiktok.com/@danceboybb", icon: "note", color: "#00d4ff" },
-    { name: "YouTube", handle: "@DanceboyBB", url: "https://www.youtube.com/@DanceboyBB", icon: "play", color: "#ff2b3a" },
-    { name: "Twitch", handle: "danceboybb", url: "https://www.twitch.tv/danceboybb", icon: "chat", color: "#9b3dff" },
-    { name: "Kick", handle: "danceboybb", url: "https://kick.com/danceboybb", icon: "bolt", color: "#33e14d" },
+    // live: key in Stream Hub's live.json; liveUrl: where the badge goes while live.
+    { name: "TikTok LIVE", handle: "@danceboybb", url: "https://www.tiktok.com/@danceboybb", icon: "note", color: "#00d4ff", live: "tiktok", liveUrl: "https://www.tiktok.com/@danceboybb/live" },
+    { name: "YouTube", handle: "@DanceboyBB", url: "https://www.youtube.com/@DanceboyBB", icon: "play", color: "#ff2b3a", live: "youtube", liveUrl: "https://www.youtube.com/@DanceboyBB/live" },
+    { name: "Twitch", handle: "danceboybb", url: "https://www.twitch.tv/danceboybb", icon: "chat", color: "#9b3dff", live: "twitch", liveUrl: "https://www.twitch.tv/danceboybb" },
+    { name: "Kick", handle: "danceboybb", url: "https://kick.com/danceboybb", icon: "bolt", color: "#33e14d", live: "kick", liveUrl: "https://kick.com/danceboybb" },
     { name: "Instagram", handle: "marius.ene92", url: "https://www.instagram.com/marius.ene92", icon: "camera", color: "#ff3fd0" },
     { name: "Facebook", handle: "DanceboyBB", url: "https://www.facebook.com/profile.php?id=100000952430353", icon: "people", color: "#1e8bff" }
   ];
@@ -221,10 +239,10 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
 
   const badge = l => {
     const inner = `<span class="ico">${ICONS[l.icon] || ICONS.play}</span>
-      <span class="txt"><b>${esc(l.name)}</b><i>${esc(l.handle)}</i></span>`;
+      <span class="txt"><b>${esc(l.name)}</b><i>${esc(l.handle)}</i>${l.live ? '<span class="onair">LIVE NOW</span>' : ""}</span>`;
     const style = `style="--c:${esc(l.color)}"`;
     return l.url
-      ? `<a class="badge" ${style} href="${esc(l.url)}" target="_blank" rel="noopener">${inner}<span class="go" aria-hidden="true">&rarr;</span></a>`
+      ? `<a class="badge" ${style}${l.live ? ` data-live="${esc(l.live)}"` : ""} href="${esc(l.url)}" target="_blank" rel="noopener">${inner}<span class="go" aria-hidden="true">&rarr;</span></a>`
       : `<div class="badge off" ${style} aria-disabled="true">${inner}<span class="go">în curând</span></div>`;
   };
   document.getElementById("links").innerHTML = LINKS.map(badge).join("");
@@ -248,6 +266,7 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
     </li>`).join("");
 
   // Next scheduled live (from the schedule only - not a real live status)
+  let scheduleLine = "";
   if (today >= 0) {
     let next = -1;
     for (let k = 0; k < 7; k++) {
@@ -257,8 +276,61 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
     if (next >= 0) {
       const i = (today + next) % 7;
       const when = next === 0 ? "azi" : next === 1 ? "mâine" : SCHEDULE[i].day.toLowerCase();
-      document.getElementById("next").innerHTML = `Următorul live din program: <span>${esc(when)}, de la ${esc(LIVE_START)}</span>`;
+      scheduleLine = `Următorul live din program: <span>${esc(when)}, de la ${esc(LIVE_START)}</span>`;
+      document.getElementById("next").innerHTML = scheduleLine;
     }
+  }
+
+  // ===== LIVE NOW from Stream Hub =====
+  let heroRef = document.getElementById("onair-hero");
+  const nextEl = document.getElementById("next");
+  const showLive = live => {
+    const on = [];
+    LINKS.forEach(l => {
+      if (!l.live) return;
+      const el = document.querySelector(`[data-live="${l.live}"]`);
+      if (!el) return;
+      const isLive = live[l.live] === true;
+      el.classList.toggle("is-live", isLive);
+      el.href = isLive && l.liveUrl ? l.liveUrl : l.url;
+      el.setAttribute("aria-label", isLive ? `${l.name} - LIVE acum` : l.name);
+      if (isLive) on.push(l);
+    });
+    // Hero pill: a link to the live stream while live, the plain brand label otherwise.
+    const heroLive = on.length > 0;
+    if (heroLive !== (heroRef.tagName === "A")) {
+      const next = document.createElement(heroLive ? "a" : "span");
+      next.id = "onair-hero";
+      next.className = "live";
+      heroRef.replaceWith(next);
+      heroRef = next;
+    }
+    const h = heroRef;
+    h.classList.toggle("on", heroLive);
+    h.textContent = heroLive ? "LIVE ACUM" : "LIVE";
+    if (heroLive) { h.href = on[0].liveUrl || on[0].url; h.target = "_blank"; h.rel = "noopener"; }
+    nextEl.innerHTML = heroLive
+      ? `Sunt live acum pe <span>${on.map(l => esc(l.name.replace(/ LIVE$/, ""))).join(", ")}</span>!`
+      : scheduleLine;
+  };
+  const checkLive = async () => {
+    let live = {};
+    try {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 8000);
+      const res = await fetch(`${LIVE_STATUS_URL}?t=${Date.now()}`, { cache: "no-store", signal: ctl.signal });
+      clearTimeout(timer);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.app === "danceboybb-stream-hub" && data.live && typeof data.live === "object") live = data.live;
+      }
+    } catch (e) { /* Stream Hub off or unreachable: offline */ }
+    showLive(live);
+  };
+  if (LIVE_STATUS_URL) {
+    checkLive();
+    setInterval(() => { if (!document.hidden) checkLive(); }, LIVE_CHECK_SECONDS * 1000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) checkLive(); });
   }
 
   document.getElementById("year").textContent = new Date().getFullYear();
