@@ -66,6 +66,9 @@ a.badge:focus-visible,.copy:focus-visible{outline:3px solid #fff;outline-offset:
 .ico.logo{background:none}
 .ico.logo img{width:46px;height:46px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
 .ico.logo img.logo-ring{width:42px;height:42px;border-radius:50%;box-shadow:0 0 0 3px #fff}
+.ico.logo img.logo-outline{width:42px;height:42px;border-radius:11px;box-shadow:0 0 0 3px #fff}
+.ico.logo.logo-tile{background:#fff}
+.ico.logo.logo-tile img{width:38px;height:38px;filter:none}
 .txt{flex:1;display:grid;gap:1px;justify-items:start}
 .txt b{font-size:19px;line-height:1.2}
 .txt i{font-style:italic;font-weight:700;font-size:15px;opacity:.85}
@@ -206,20 +209,22 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
   };
 
   // bg = button fill (platform colour, may be a gradient), color = glow, ink = text colour.
-  // logo = path to the platform's official icon file (e.g. "icons/tiktok.svg"); empty -> generic glyph from ICONS.
+  // logo = path to the platform's official icon file (e.g. "icons/tiktok.png"); empty -> generic glyph from ICONS.
+  // logoStyle: "ring" (white circle outline), "outline" (white rounded outline), "tile" (white tile behind) - for logos
+  // whose colour matches their own button.
   const LINKS = [
     // live: key in Stream Hub's live.json; liveUrl: where the badge goes while live.
     { name: "TikTok LIVE", handle: "@danceboybb", url: "https://www.tiktok.com/@danceboybb", icon: "note", logo: "",
       bg: "linear-gradient(135deg,#010101 55%,#25f4ee 140%)", color: "#25f4ee", live: "tiktok", liveUrl: "https://www.tiktok.com/@danceboybb/live" },
-    { name: "YouTube", handle: "@DanceboyBB", url: "https://www.youtube.com/@DanceboyBB", icon: "play", logo: "",
+    { name: "YouTube", handle: "@DanceboyBB", url: "https://www.youtube.com/@DanceboyBB", icon: "play", logo: "icons/youtube.png", logoStyle: "tile",
       bg: "#ff0000", color: "#ff0000", live: "youtube", liveUrl: "https://www.youtube.com/@DanceboyBB/live" },
-    { name: "Twitch", handle: "danceboybb", url: "https://www.twitch.tv/danceboybb", icon: "chat", logo: "",
+    { name: "Twitch", handle: "danceboybb", url: "https://www.twitch.tv/danceboybb", icon: "chat", logo: "icons/twitch.png", logoStyle: "outline",
       bg: "#9146ff", color: "#9146ff", live: "twitch", liveUrl: "https://www.twitch.tv/danceboybb" },
     { name: "Kick", handle: "danceboybb", url: "https://kick.com/danceboybb", icon: "bolt", logo: "icons/kick.png",
       bg: "#53fc18", color: "#53fc18", ink: "#0b0e0f", live: "kick", liveUrl: "https://kick.com/danceboybb" },
-    { name: "Instagram", handle: "marius.ene92", url: "https://www.instagram.com/marius.ene92", icon: "camera", logo: "",
+    { name: "Instagram", handle: "marius.ene92", url: "https://www.instagram.com/marius.ene92", icon: "camera", logo: "icons/instagram.png",
       bg: "linear-gradient(45deg,#feda75,#fa7e1e 25%,#d62976 50%,#962fbf 75%,#4f5bd5)", color: "#d62976" },
-    { name: "Facebook", handle: "DanceboyBB", url: "https://www.facebook.com/profile.php?id=100000952430353", icon: "people", logo: "icons/facebook.png", logoRing: true,
+    { name: "Facebook", handle: "DanceboyBB", url: "https://www.facebook.com/profile.php?id=100000952430353", icon: "people", logo: "icons/facebook.png", logoStyle: "ring",
       bg: "#1877f2", color: "#1877f2" }
   ];
 
@@ -254,8 +259,9 @@ a.live.on:focus-visible{outline:3px solid #fff;outline-offset:3px}
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   const badge = l => {
-    const glyph = l.logo ? `<img src="${esc(l.logo)}" alt=""${l.logoRing ? ' class="logo-ring"' : ""}>` : (ICONS[l.icon] || ICONS.play);
-    const inner = `<span class="ico${l.logo ? " logo" : ""}">${glyph}</span>
+    const imgClass = { ring: "logo-ring", outline: "logo-outline" }[l.logoStyle];
+    const glyph = l.logo ? `<img src="${esc(l.logo)}" alt=""${imgClass ? ` class="${imgClass}"` : ""}>` : (ICONS[l.icon] || ICONS.play);
+    const inner = `<span class="ico${l.logo ? " logo" : ""}${l.logoStyle === "tile" ? " logo-tile" : ""}">${glyph}</span>
       <span class="txt"><b>${esc(l.name)}</b><i>${esc(l.handle)}</i>${l.live ? '<span class="onair">LIVE NOW</span>' : ""}</span>`;
     const style = `style="--c:${esc(l.color)};--bg:${esc(l.bg)}${l.ink ? `;--ink:${esc(l.ink)}` : ""}"`;
     return l.url
